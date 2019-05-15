@@ -1,11 +1,28 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.DecimalFormat;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 public class GamePanel extends JPanel {
 
     //instance fields
+
+    private double frequency1;
+    private double frequency2;
+
+    private JSlider fpsSlider;
+    private JSlider wavelength1Slider;
+    private JSlider wavelength2Slider;
+
+    private ChangeListener fpsChanger;
+    private ChangeListener wavelength1Changer;
+    private ChangeListener wavelength2Changer;
+
+    private JButton rephaseButton;
+    private ActionListener rephase;
 
     //wavelengths
     private int wavelength1;
@@ -15,7 +32,7 @@ public class GamePanel extends JPanel {
     private Point dotposition1;
     private Point dotposition2;
 
-    //distance between dots and the horizontal line
+    //distance between dots and the horizontal line, calculated using dotposition1
     private int linePosition;
 
     //the initial offset of the line, can be used for animation purposes int he future
@@ -33,18 +50,22 @@ public class GamePanel extends JPanel {
     //constructor
     public GamePanel(int w, int h) {
 
+        setLayout(null);
+
         dotposition1 = new Point(200, 400);
         dotposition2 = new Point(400, 400);
 
-        linePosition = 300;
+        linePosition = 250;
 
         wavelength1 = 80;
-        wavelength2 = 130;
+        wavelength2 = 80;
 
         initOffset1 = 0;
         initOffset2 = 0;
 
         fps = 60;
+
+        initRephaseButtons();
 
         //setting up the actionListener
         action = new ActionListener() {
@@ -72,6 +93,19 @@ public class GamePanel extends JPanel {
         //setting up timer
         timer = new Timer(1000/fps, action);
 
+        //reliant upon fpsSlider and timer being complete
+        initSliders();
+
+        //adds component
+        add(fpsSlider);
+        add(wavelength1Slider);
+        add(wavelength2Slider);
+        add(rephaseButton);
+
+        frequency1 = (double)fps/wavelength1;
+        frequency2 = (double)fps/wavelength1;
+
+        //WARNING: should be the last line
         timer.start();
 
     }//end GamePanel
@@ -106,7 +140,7 @@ public class GamePanel extends JPanel {
 
         //this erases the portion above the line, comment out if you do not want
         g2.setColor(UIManager.getColor("Panel.background"));
-        g2.fillRect(0, 0, 600, 100);
+        g2.fillRect(0, 0, 600, (int)dotposition1.getY() - linePosition);
 
         //draws the line
         g2.setColor(new Color(10, 10, 10));
@@ -119,6 +153,14 @@ public class GamePanel extends JPanel {
     //--------------------
 
     public void drawWaves(int wavelength, Point startpoint, Graphics2D g2, int numWaves, int offset){
+        //desc:
+        //wavelength: wavelength of the wave
+        //startpoint: origin point of the waves
+        //g2: g2
+        //numWaves: number of waves to draw, this method only draws a certain amount of waves
+        //just draw enough to fill up the screen
+        //offset: how much you want the shift to be,
+        //mainly designed so you can draw in "trough" waves at half the wavelength of the normal wave
 
         int modwave = offset;
 
@@ -137,10 +179,116 @@ public class GamePanel extends JPanel {
 
         g2.setFont(new Font("Arial", Font.BOLD, 12));
 
-        g2.drawString("Blue Wavelength: " + wavelength1 + "px", 10, 20);
-        g2.drawString("Red Wavelength: " + wavelength2 + "px", 10, 40);
-        g2.drawString("Velocity/FPS: " + fps + "px/sec", 10, 60);
+        DecimalFormat df = new DecimalFormat("#.####");
+
+        g2.drawString("Blue Wavelength: " + wavelength1 + "px", 35 + 10 + 180, 70);
+        g2.drawString("Red Wavelength: " + wavelength2 + "px", 35 + 10 + 180 + 10 + 180, 70);
+        g2.drawString("Velocity/FPS: " + fps + "px/sec", 35, 70);
+        g2.drawString("Frequency: " + df.format(frequency1) + "waves/sec", 30 + 10 + 180, 90);
+        g2.drawString("Frequency: " + df.format(frequency2) + "waves/sec", 30 + 10 + 180 + 10 + 180, 90);
 
     }//end drawStats
+
+    //--------------------
+
+    public void initSliders(){
+
+        //creating slider for FPS
+        fpsSlider = new JSlider(JSlider.HORIZONTAL, 10, 100, 60);
+
+        //Turn on labels at major tick marks.
+        fpsSlider.setMajorTickSpacing(10);
+        fpsSlider.setPaintTicks(true);
+        fpsSlider.setMinorTickSpacing(5);
+        fpsSlider.setPaintLabels(true);
+        fpsSlider.setSnapToTicks(true);
+
+        fpsChanger = new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+
+                fps = fpsSlider.getValue();
+                timer.setDelay(1000/fps);
+                frequency1 = (double)fps/wavelength1;
+                frequency2 = (double)fps/wavelength2;
+
+            }//end stateChanged
+        };//end changeListener
+
+        //reliant upon fpsChanger and fpsSlider being complete
+        fpsSlider.addChangeListener(fpsChanger);
+
+        fpsSlider.setBounds(10, 10, 180, 40);
+
+        //--------------------
+
+        //creating slider for wavelength1
+        wavelength1Slider = new JSlider(JSlider.HORIZONTAL, 60, 200, 80);
+
+        wavelength1Slider.setMajorTickSpacing(20);
+        wavelength1Slider.setPaintTicks(true);
+        wavelength1Slider.setPaintLabels(true);
+        wavelength1Slider.setSnapToTicks(true);
+
+        wavelength1Changer = new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+
+                wavelength1 = wavelength1Slider.getValue();
+                frequency1 = (double)fps/wavelength1;
+
+            }//end stateChanged
+        };//end changeListener
+
+        wavelength1Slider.addChangeListener(wavelength1Changer);
+
+        wavelength1Slider.setBounds(10 + 180 + 10, 10, 180, 40);
+
+        //--------------------
+
+        //creating the slider for wavelength2
+        wavelength2Slider = new JSlider(JSlider.HORIZONTAL, 60, 200, 80);
+
+        wavelength2Slider.setMajorTickSpacing(20);
+        wavelength2Slider.setPaintTicks(true);
+        wavelength2Slider.setPaintLabels(true);
+        wavelength2Slider.setSnapToTicks(true);
+
+        wavelength2Changer = new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+
+                wavelength2 = wavelength2Slider.getValue();
+                frequency2 = (double)fps/wavelength2;
+
+            }//end stateChanged
+        };//end changeListener
+
+        wavelength2Slider.addChangeListener(wavelength2Changer);
+
+        wavelength2Slider.setBounds(10 + 180 + 10 + 180 + 10, 10, 180, 40);
+
+    }//end initSliders
+
+    //--------------------
+
+    public void initRephaseButtons(){
+
+        //setting up rephase action
+        rephase = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                initOffset2 = 0;
+                initOffset1 = 0;
+
+            }//end actionPerformed
+        };//end actionListener
+
+        rephaseButton = new JButton("Rephase");
+        rephaseButton.addActionListener(rephase);
+        rephaseButton.setBounds(300 - 40, 100, 80, 40);
+
+    }//end initRephaseButtons
 
 }//end class

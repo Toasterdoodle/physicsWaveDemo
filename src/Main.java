@@ -5,6 +5,17 @@ public class Main {
 
     public static void main(String[] args) {
 
+//        //setting look and feel
+//        try{
+//
+//            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+//
+//        }catch(Exception e){
+//
+//            System.out.println("There's something wrong with your look and feel lmao");
+//
+//        }//end trycatch
+
         //===========Jframe==========
         JFrame frame = new JFrame("Wave Demo");
         frame.setDefaultCloseOperation(frame.EXIT_ON_CLOSE);
